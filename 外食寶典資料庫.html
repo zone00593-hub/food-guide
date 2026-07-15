@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>外食寶典資料庫</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700;900&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+  :root{
+    --ink:#1f2a24;
+    --paper:#f6f4ee;
+    --card:#ffffff;
+    --line:#dcd6c8;
+    --accent:#3f6b4d;
+    --accent2:#c8622a;
+    --carb:#c8622a;
+    --protein:#3f6b4d;
+    --fat:#8a6b3f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Noto Sans TC',sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  header{
+    padding:36px 20px 20px;
+    text-align:center;
+    border-bottom:2px solid var(--ink);
+  }
+  header h1{
+    font-family:'Noto Serif TC',serif;
+    font-weight:900;
+    font-size:clamp(28px,5vw,42px);
+    margin:0 0 6px;
+    letter-spacing:.04em;
+  }
+  header p{
+    margin:0;
+    color:#5a5a52;
+    font-size:14px;
+  }
+  .controls{
+    max-width:960px;
+    margin:20px auto 0;
+    padding:0 16px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+  }
+  #search{
+    flex:1;
+    min-width:220px;
+    padding:12px 16px;
+    font-size:16px;
+    border:2px solid var(--ink);
+    border-radius:2px;
+    background:var(--card);
+    font-family:'Noto Sans TC',sans-serif;
+  }
+  #search:focus{outline:2px solid var(--accent2);outline-offset:1px;}
+  .chip-row{
+    max-width:960px;
+    margin:14px auto 0;
+    padding:0 16px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .chip{
+    padding:6px 14px;
+    border:1px solid var(--ink);
+    border-radius:999px;
+    font-size:13px;
+    cursor:pointer;
+    background:var(--card);
+    user-select:none;
+  }
+  .chip.active{
+    background:var(--ink);
+    color:var(--paper);
+  }
+  #count{
+    max-width:960px;
+    margin:16px auto 0;
+    padding:0 16px;
+    font-size:13px;
+    color:#5a5a52;
+  }
+  main{
+    max-width:960px;
+    margin:0 auto;
+    padding:12px 16px 60px;
+  }
+  .store-group{
+    margin-top:28px;
+  }
+  .store-title{
+    font-family:'Noto Serif TC',serif;
+    font-weight:700;
+    font-size:20px;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:6px;
+    margin-bottom:10px;
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+  }
+  .store-title .n{
+    font-size:12px;
+    color:#8a8a80;
+    font-weight:400;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:4px solid var(--accent);
+    border-radius:3px;
+    padding:14px 16px;
+    margin-bottom:10px;
+  }
+  .card .kcal{
+    display:inline-block;
+    font-family:'Noto Serif TC',serif;
+    font-weight:900;
+    font-size:13px;
+    color:#fff;
+    background:var(--ink);
+    padding:2px 9px;
+    border-radius:2px;
+    margin-bottom:6px;
+  }
+  .card .dish{
+    font-size:15px;
+    font-weight:500;
+    line-height:1.5;
+    margin-bottom:8px;
+  }
+  .macros{
+    display:flex;
+    gap:14px;
+    font-size:13px;
+    font-family:'Noto Sans TC',sans-serif;
+  }
+  .macros span{display:flex;align-items:center;gap:4px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+  .dot.c{background:var(--carb);}
+  .dot.p{background:var(--protein);}
+  .dot.f{background:var(--fat);}
+  .empty{
+    text-align:center;
+    padding:60px 20px;
+    color:#8a8a80;
+    font-size:15px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>外食寶典資料庫</h1>
+  <p>輸入店家名稱查詢對應熱量的餐點組合（醣類 / 蛋白質 / 脂質，單位：g）</p>
+</header>
+
+<div class="controls">
+  <input id="search" type="text" placeholder="搜尋店家，例如：7-11、星巴克、鬍鬚張…">
+</div>
+<div class="chip-row" id="chips"></div>
+<div id="count"></div>
+
+<main id="main"></main>
+
+<script>
+const DATA = [
+{store:"7-11",kcal:300,dish:"(中)蒸地瓜＋大成原味雞胸肉＋野菜農夫時蔬",c:46,p:30,f:2},
+{store:"7-11",kcal:300,dish:"柚香和風嫩雞沙拉＋鮭魚鮭魚卵飯團",c:44,p:20,f:6},
+{store:"7-11",kcal:300,dish:"兩顆茶葉蛋＋豆腐雞胸肉沙拉",c:6,p:35,f:19},
+{store:"7-11",kcal:400,dish:"義式嫩雞花椰菜飯＋泰式雞肉蒟蒻麵沙拉",c:41,p:26,f:11},
+{store:"7-11",kcal:400,dish:"地瓜雞胸肉沙拉＋照燒雞溏心蛋三明治",c:59,p:15,f:null},
+{store:"7-11",kcal:400,dish:"香草烤雞沙拉＋日式雞腿肉串燒＋茶葉蛋",c:11,p:41,f:12},
+{store:"7-11",kcal:500,dish:"香草烤雞腿薑黃飯＋茶葉蛋",c:47,p:31,f:27},
+{store:"7-11",kcal:500,dish:"鮮蔬烤雞三明治＋無糖豆漿400ml＋茶葉蛋",c:30,p:33,f:28},
+{store:"7-11",kcal:500,dish:"凱薩雞肉蔬菜捲＋完熟番茄蔬菜湯",c:58,p:20,f:19},
+{store:"7-11",kcal:300,dish:"照燒雞溏心蛋三明治＋鮭魚豆腐味噌湯",c:28,p:24,f:12},
+{store:"7-11",kcal:300,dish:"紅藜毛豆雞肉沙拉＋無糖豆漿",c:21,p:25,f:12},
+{store:"7-11",kcal:300,dish:"吉士豬肉堡加蛋＋無糖綠茶",c:26,p:16,f:13},
+{store:"7-11",kcal:400,dish:"義式香草雞胸＋松露風味野菇烘蛋捲",c:31,p:37,f:18},
+{store:"7-11",kcal:400,dish:"鮪魚蛋雙拼三明治＋永心鳳茶剝皮辣椒雞湯",c:24,p:25,f:22},
+{store:"7-11",kcal:400,dish:"鮭魚五穀飯飯糰＋茶葉蛋＋特濃無糖豆漿",c:38,p:28,f:21},
+{store:"7-11",kcal:500,dish:"冰烤地瓜＋一日野菜萵苣沙拉＋義式香草烤雞腿",c:59,p:23,f:12},
+{store:"7-11",kcal:500,dish:"凱薩風味雞肉捲＋茶葉蛋＋無加糖豆漿燕麥",c:46,p:26,f:23},
+{store:"7-11",kcal:500,dish:"21Plus蔥鹽雞米飽＋糖燻雞腿＋蔬菜關東煮",c:47,p:28,f:21},
+{store:"7-11",kcal:100,dish:"茶碗蒸",c:3,p:8,f:5},
+{store:"7-11",kcal:100,dish:"7-11蔬菜關東煮＋0卡果凍",c:2,p:8,f:4},
+{store:"7-11",kcal:200,dish:"7-11爆炒滷雞胗＋無糖綠茶",c:5,p:22,f:7},
+{store:"7-11",kcal:300,dish:"7-11凱薩風味雞肉捲",c:31,p:13,f:14},
+{store:"7-11",kcal:300,dish:"7-11日式雞肉串＋特濃豆漿",c:12,p:38,f:15},
+
+{store:"八方雲集",kcal:300,dish:"韓式辣味水餃5個＋蕈菇湯",c:35,p:16,f:17},
+{store:"八方雲集",kcal:300,dish:"田園雞肉鍋貼5個＋滷蘿蔔",c:36,p:16,f:15},
+{store:"八方雲集",kcal:300,dish:"鮮蝦水餃4個＋滷豆腐",c:25,p:15,f:17},
+{store:"八方雲集",kcal:400,dish:"咖哩水餃5個＋蘿蔔排骨湯",c:38,p:15,f:23},
+{store:"八方雲集",kcal:400,dish:"韭菜鍋貼5個＋燙青菜",c:36,p:12,f:25},
+{store:"八方雲集",kcal:400,dish:"菜肉大餛飩湯＋和風秋葵＋無糖豆漿",c:27,p:24,f:18},
+{store:"八方雲集",kcal:500,dish:"招牌水餃8個＋滷蛋＋滷蘿蔔",c:40,p:20,f:25},
+{store:"八方雲集",kcal:500,dish:"玉米鍋貼8個＋燙青菜＋蕈菇湯",c:53,p:15,f:25},
+{store:"八方雲集",kcal:500,dish:"新蔬食水餃8個＋燙青菜＋無糖豆漿",c:48,p:26,f:21},
+
+{store:"火鍋 肉品4oz",kcal:234,dish:"豬梅花肉片",c:null,p:21,f:16},
+{store:"火鍋 肉品4oz",kcal:136,dish:"牛梅花肉片",c:null,p:23,f:4},
+{store:"火鍋 肉品4oz",kcal:188,dish:"牛板腱",c:null,p:22,f:10},
+{store:"火鍋 肉品4oz",kcal:132,dish:"雞胸肉(去皮)",c:null,p:26,f:2},
+{store:"火鍋 肉品4oz",kcal:194,dish:"雞腿肉",c:null,p:20,f:12},
+{store:"火鍋 肉品4oz",kcal:124,dish:"鯛魚片",c:null,p:21,f:4},
+{store:"火鍋 肉品6oz",kcal:352,dish:"豬梅花肉片",c:null,p:32,f:24},
+{store:"火鍋 肉品6oz",kcal:204,dish:"牛梅花肉片",c:null,p:35,f:6},
+{store:"火鍋 肉品6oz",kcal:282,dish:"牛板腱",c:null,p:34,f:15},
+{store:"火鍋 肉品6oz",kcal:199,dish:"雞胸肉(去皮)",c:null,p:40,f:3},
+{store:"火鍋 肉品6oz",kcal:292,dish:"雞腿肉",c:null,p:31,f:18},
+{store:"火鍋 肉品6oz",kcal:187,dish:"鯛魚片",c:null,p:31,f:6},
+
+{store:"麵店 火雞肉飯",kcal:300,dish:"小雞肉飯(不淋醬)＋燙青菜(不加肉燥)",c:55,p:13,f:5},
+{store:"麵店 火雞肉飯",kcal:300,dish:"小湯麵(湯少喝)＋涼拌小黃瓜",c:55,p:7,f:11},
+{store:"麵店 火雞肉飯",kcal:300,dish:"皮蛋豆腐＋豬血湯",c:0,p:31,f:22},
+{store:"麵店 火雞肉飯",kcal:400,dish:"小雞肉飯(不淋醬)＋滷蛋＋燙青菜(不加肉燥)",c:55,p:20,f:10},
+{store:"麵店 火雞肉飯",kcal:400,dish:"小湯麵(湯少喝)＋海帶＋紫菜蛋花湯",c:55,p:14,f:17},
+{store:"麵店 火雞肉飯",kcal:400,dish:"雞胗＋隔間肉＋涼拌小黃瓜＋豬血湯",c:5,p:51,f:25},
+{store:"麵店 火雞肉飯",kcal:500,dish:"小雞肉飯(不淋醬)＋小方豆乾＋燙青菜(不加肉燥)",c:55,p:34,f:20},
+{store:"麵店 火雞肉飯",kcal:500,dish:"小湯麵(湯少喝)＋滷蛋＋海帶＋豬血湯",c:55,p:24,f:23},
+{store:"麵店 火雞肉飯",kcal:500,dish:"皮蛋豆腐＋隔間肉＋紫菜蛋花湯＋燙青菜(不加肉燥)",c:5,p:49,f:30},
+
+{store:"全家",kcal:300,dish:"(中)夯蕃薯＋(素)番茄油醋沙拉＋香辣蛋白丁",c:45,p:7,f:11},
+{store:"全家",kcal:300,dish:"二配大飯糰鹽水雞肉＋茶葉蛋",c:38,p:13,f:7},
+{store:"全家",kcal:300,dish:"莎莎烤雞麵沙拉＋法式嫩雞胸",c:29,p:34,f:6},
+{store:"全家",kcal:400,dish:"鮪魚蕃茄義大利麵＋凱薩沙拉",c:52,p:20,f:14},
+{store:"全家",kcal:400,dish:"日式蕎麥沾麵＋四川椒麻嫩雞胸",c:52,p:26,f:3},
+{store:"全家",kcal:400,dish:"雞肉親子丼飯糰＋海藻沙拉",c:69,p:15,f:10},
+{store:"全家",kcal:500,dish:"昆布茶泡饅魚烤飯＋田園沙拉",c:61,p:21,f:22},
+{store:"全家",kcal:500,dish:"健身G肉餐盒＋Hana蒸大豆",c:65,p:33,f:16},
+{store:"全家",kcal:500,dish:"辛辛炒韓式豚餐盒＋鮭魚味噌湯",c:71,p:30,f:19},
+{store:"全家",kcal:300,dish:"醬燒烤雞三明治＋茶葉蛋＋美式咖啡",c:21,p:16,f:15},
+{store:"全家",kcal:300,dish:"旨味蔥蔥烤雞飯糰＋香菇雞燉湯",c:37,p:30,f:10},
+{store:"全家",kcal:300,dish:"四川椒麻嫩雞胸＋義式香草烤蔬＋無糖杏仁果奶",c:25,p:25,f:10},
+{store:"全家",kcal:400,dish:"莎莎紅醬烤雞堡＋特濃豆漿",c:35,p:36,f:17},
+{store:"全家",kcal:400,dish:"咖哩鷹嘴豆雞肉握沙拉＋墨西哥風味烤雞腿丁",c:29,p:29,f:22},
+{store:"全家",kcal:400,dish:"鹽蔥鯖魚飯糰＋日式茶碗蒸＋蒜頭雞燉湯",c:40,p:28,f:13},
+{store:"全家",kcal:500,dish:"紐澳良香草烤半雞＋無糖綠茶",c:5,p:29,f:37},
+{store:"全家",kcal:500,dish:"豬肉起司蛋堡＋蘋果油醋雞肉沙拉",c:52,p:29,f:17},
+{store:"全家",kcal:500,dish:"夯地瓜(中)＋美式BBQ腿排＋特濃豆漿",c:38,p:38,f:22},
+{store:"全家",kcal:200,dish:"全家-蔥鹽雞肉沙拉＋美式咖啡",c:23,p:14,f:4},
+{store:"全家",kcal:200,dish:"全家-蘋果油醋雞肉沙拉",c:25,p:14,f:8},
+{store:"全家",kcal:100,dish:"全家-麻油娃娃蔬菜湯",c:13,p:2,f:4},
+{store:"全家",kcal:100,dish:"全家-小滷青蔬＋無糖紅茶",c:7,p:3,f:5},
+{store:"全家",kcal:100,dish:"全家-嫩仙草凍",c:30,p:0,f:2},
+{store:"全家",kcal:200,dish:"香蕉1根＋無糖豆漿",c:25,p:15,f:9},
+{store:"全家",kcal:200,dish:"美式BBQ腿排＋美式咖啡",c:5,p:19,f:12},
+{store:"全家",kcal:200,dish:"茶碗蒸＋希臘優格(小盒裝)",c:11,p:15,f:10},
+{store:"全家",kcal:300,dish:"地瓜(中)＋義式風味烤雞腿",c:38,p:21,f:10},
+{store:"全家",kcal:300,dish:"雞胸肉＋鮮奶(小紙盒裝)",c:15,p:31,f:16},
+
+{store:"早餐店",kcal:300,dish:"單點里肌肉＋荷包蛋1顆",c:0,p:21,f:18},
+{store:"早餐店",kcal:300,dish:"里肌豬排蛋餅",c:30,p:16,f:18},
+{store:"早餐店",kcal:300,dish:"燻雞蛋餅",c:30,p:16,f:14},
+{store:"早餐店",kcal:400,dish:"燻雞蛋吐司(去醬)＋無糖綠茶",c:38,p:17,f:20},
+{store:"早餐店",kcal:400,dish:"鮪魚蛋餅(無美乃滋)＋美式咖啡",c:32,p:18,f:18},
+{store:"早餐店",kcal:400,dish:"蔬菜蛋餅＋無糖豆漿",c:45,p:25,f:19},
+{store:"早餐店",kcal:500,dish:"嫩煎雞腿蛋堡(去醬)＋冰咖啡(無糖)",c:40,p:24,f:24},
+{store:"早餐店",kcal:500,dish:"豬排蛋堡(去醬)＋無糖綠茶",c:40,p:16,f:14},
+{store:"早餐店",kcal:500,dish:"起司蛋餅＋無糖豆漿",c:45,p:26,f:26},
+
+{store:"自助餐",kcal:300,dish:"水果一拳頭＋豬瘦肉一手掌＋葉菜類三種",c:15,p:23,f:15},
+{store:"自助餐",kcal:300,dish:"地瓜55g＋蒸魚一手掌＋葉菜類三種",c:15,p:23,f:15},
+{store:"自助餐",kcal:400,dish:"飯半碗＋滷雞腿去皮＋葉菜類三種",c:30,p:28,f:20},
+{store:"自助餐",kcal:400,dish:"飯半碗＋炒雞丁八塊＋葉菜類三種",c:30,p:28,f:20},
+{store:"自助餐",kcal:500,dish:"玉米一根＋鯖魚1.5手掌＋葉菜類三種",c:45,p:35,f:25},
+{store:"自助餐",kcal:500,dish:"玉米一根＋鮭魚1.5手掌＋葉菜類三種",c:45,p:35,f:25},
+{store:"自助餐",kcal:500,dish:"玉米一根＋烤雞腿排一手掌＋葉菜類三種",c:45,p:35,f:25},
+
+{store:"低卡點心",kcal:300,dish:"無糖豆漿＋茶葉蛋1顆",c:16,p:22,f:14},
+{store:"低卡點心",kcal:300,dish:"香蕉一根＋雞胸肉一包",c:14,p:27,f:4},
+{store:"低卡點心",kcal:100,dish:"茶葉蛋1顆＋無糖綠茶",c:0,p:7,f:5},
+
+{store:"肯德基",kcal:300,dish:"上校薄皮嫩雞＋玉米濃湯",c:24,p:21,f:13},
+{store:"肯德基",kcal:300,dish:"美式BBQ烤雞腿＋經典玉米",c:20,p:28,f:14},
+{store:"肯德基",kcal:300,dish:"吮指嫩雞蛋烤餅＋熱紅茶",c:21,p:13,f:19},
+{store:"肯德基",kcal:400,dish:"義式香草紙包雞＋熱義式咖啡(小)",c:4,p:44,f:24},
+{store:"肯德基",kcal:400,dish:"經典原味雞排堡＋玉米濃湯",c:45,p:13,f:13},
+{store:"肯德基",kcal:400,dish:"紐奧良烤雞腿堡＋無糖茉莉綠茶(中)",c:46,p:23,f:15},
+{store:"肯德基",kcal:500,dish:"墨西哥莎莎霸王捲＋鮮蔬沙拉",c:65,p:30,f:17},
+{store:"肯德基",kcal:500,dish:"烤雞腿溫沙拉＋熱紅茶",c:58,p:27,f:16},
+{store:"肯德基",kcal:500,dish:"咔啦雞腿堡＋無糖茉莉綠茶(中)",c:51,p:26,f:15},
+
+{store:"星巴克",kcal:300,dish:"義式雞肉佛卡夏＋希臘優格原味",c:27,p:16,f:19},
+{store:"星巴克",kcal:300,dish:"香草嫩雞三明治＋輕沙拉",c:37,p:17,f:10},
+{store:"星巴克",kcal:300,dish:"照燒雞肉三明治",c:40,p:17,f:10},
+{store:"星巴克",kcal:400,dish:"煙燻風味火雞堡＋輕水果",c:56,p:24,f:7},
+{store:"星巴克",kcal:400,dish:"起司牛肉可頌＋輕沙拉",c:30,p:12,f:26},
+{store:"星巴克",kcal:400,dish:"舒肥雞肉蔬菜盅",c:59,p:25,f:7},
+{store:"星巴克",kcal:500,dish:"烤雞生吐司三明治＋LOHAS蔬菜棒",c:47,p:23,f:22},
+{store:"星巴克",kcal:500,dish:"櫛瓜肉醬義大利麵＋輕沙拉",c:69,p:20,f:15},
+{store:"星巴克",kcal:500,dish:"酪梨雞肉石窯堡＋輕水果",c:63,p:23,f:20},
+
+{store:"素食自助餐",kcal:300,dish:"水果一拳頭＋皮蛋豆腐＋葉菜類三種",c:15,p:23,f:15},
+{store:"素食自助餐",kcal:300,dish:"地瓜半包＋豆皮兩塊＋蛋一顆＋葉菜類三種",c:15,p:23,f:15},
+{store:"素食自助餐",kcal:400,dish:"飯半碗＋大黑豆乾1塊＋濕豆包1塊＋葉菜類三種",c:30,p:28,f:20},
+{store:"素食自助餐",kcal:400,dish:"飯半碗＋豆腐半盒＋黃豆乾3塊＋毛豆半碗＋葉菜類三種",c:30,p:28,f:20},
+{store:"素食自助餐",kcal:500,dish:"飯半碗＋大黑豆乾1塊＋濕豆包1塊＋葉菜類三種",c:45,p:35,f:25},
+{store:"素食自助餐",kcal:500,dish:"玉米一根＋濕豆包1塊＋烤麩一碗＋葉菜類三種",c:45,p:35,f:25},
+{store:"素食自助餐",kcal:500,dish:"玉米一根＋大黑豆乾1塊＋蛋兩顆＋葉菜類三種",c:45,p:35,f:25},
+
+{store:"健康餐",kcal:300,dish:"嫩煎雞胸肉(飯換生菜)",c:20,p:21,f:10},
+{store:"健康餐",kcal:300,dish:"豬里肌(飯換生菜)",c:20,p:23,f:12},
+{store:"健康餐",kcal:400,dish:"嫩煎雞胸肉(半飯換生菜)",c:40,p:23,f:10},
+{store:"健康餐",kcal:400,dish:"豬里肌(半飯換生菜)",c:40,p:25,f:12},
+{store:"健康餐",kcal:500,dish:"烤鯖魚(半飯換生菜)",c:40,p:25,f:20},
+{store:"健康餐",kcal:500,dish:"烤鮭魚(半飯換生菜)",c:40,p:25,f:22},
+{store:"健康餐",kcal:500,dish:"滷牛腱(半飯換生菜)",c:40,p:27,f:20},
+
+{store:"麥味登",kcal:300,dish:"優蛋白蛋捲餐＋無糖綠茶",c:12,p:25,f:14},
+{store:"麥味登",kcal:300,dish:"腿排沙拉",c:16,p:15,f:18},
+{store:"麥味登",kcal:300,dish:"地瓜雞肉餐",c:30,p:20,f:10},
+{store:"麥味登",kcal:400,dish:"嫩雞沙拉＋歐姆蛋",c:19,p:26,f:29},
+{store:"麥味登",kcal:400,dish:"豬排蛋餅＋無糖豆漿",c:30,p:25,f:22},
+{store:"麥味登",kcal:400,dish:"燻雞湯種吐司＋無糖綠茶",c:30,p:16,f:17},
+{store:"麥味登",kcal:500,dish:"紫米時蔬嫩雞飯＋無糖豆漿",c:45,p:34,f:22},
+{store:"麥味登",kcal:500,dish:"燻雞沙拉＋蕃薯＋牛奶",c:44,p:26,f:24},
+{store:"麥味登",kcal:500,dish:"歐姆蛋丹麥堡＋無糖綠茶",c:54,p:20,f:20},
+
+{store:"麥當勞早餐",kcal:300,dish:"青蔬滿福堡＋水果袋",c:37,p:19,f:11},
+{store:"麥當勞早餐",kcal:300,dish:"吉士蛋堡＋美式咖啡",c:30,p:14,f:12},
+{store:"麥當勞早餐",kcal:300,dish:"豬肉滿福堡＋無糖綠茶",c:27,p:16,f:16},
+{store:"麥當勞早餐",kcal:400,dish:"經典大早餐",c:27,p:26,f:22},
+{store:"麥當勞早餐",kcal:400,dish:"豬肉滿福堡加蛋＋無糖紅茶",c:28,p:24,f:20},
+{store:"麥當勞早餐",kcal:400,dish:"火腿蛋堡＋玉米湯(小)",c:47,p:19,f:15},
+{store:"麥當勞早餐",kcal:500,dish:"起司番茄嫩蛋貝果＋四季沙拉(大)",c:59,p:24,f:14},
+{store:"麥當勞早餐",kcal:500,dish:"無敵豬肉滿福堡加蛋＋四季沙拉(大)",c:36,p:33,f:30},
+{store:"麥當勞早餐",kcal:500,dish:"香雞蛋堡＋水果袋＋黑咖啡",c:51,p:22,f:19},
+
+{store:"路易莎",kcal:300,dish:"豬肉起司瑪芬堡＋美式黑咖啡",c:32,p:16,f:14},
+{store:"路易莎",kcal:300,dish:"烤腿排三明治＋英式紅茶(無糖)",c:31,p:21,f:14},
+{store:"路易莎",kcal:300,dish:"火腿起司磚壓＋薰香綠茶(無糖)",c:30,p:16,f:16},
+{store:"路易莎",kcal:400,dish:"牛肉三明治＋英式紅茶拿鐵",c:65,p:18,f:9},
+{store:"路易莎",kcal:400,dish:"燻雞佛卡夏＋咖啡拿鐵",c:54,p:21,f:14},
+{store:"路易莎",kcal:400,dish:"墨西哥辣椒豬肉堡＋太妃紅茶(無糖)",c:37,p:17,f:23},
+{store:"路易莎",kcal:500,dish:"薑汁燒肉磚壓＋紅蜜鮮奶茶",c:62,p:21,f:22},
+{store:"路易莎",kcal:500,dish:"法式紅酒牛肉堡＋煎茶(無糖)",c:42,p:15,f:32},
+{store:"路易莎",kcal:500,dish:"培根歐姆蛋口袋＋抹茶鮮奶",c:52,p:27,f:21},
+
+{store:"壽司",kcal:300,dish:"鮪魚壽司＋鮮蝦壽司＋旗魚生魚片＋味噌湯",c:40,p:21,f:6},
+{store:"壽司",kcal:300,dish:"章魚壽司＋飛魚卵軍艦＋蘆筍手捲＋鮭魚刺身＋花椰菜",c:38,p:16,f:10},
+{store:"壽司",kcal:300,dish:"干貝壽司1個＋鯖魚壽司＋茶碗蒸＋鮪魚手捲＋海帶絲",c:28,p:18,f:12},
+{store:"壽司",kcal:400,dish:"北寄貝壽司＋烏賊壽司＋鯡魚壽司＋茶碗蒸＋旗魚刺身＋鮮蝦手捲",c:47,p:28,f:28},
+{store:"壽司",kcal:400,dish:"蒲燒鰻壽司＋章魚軍艦＋大干貝＋鯛魚刺身＋味噌湯＋茶碗蒸",c:42,p:30,f:10},
+{store:"壽司",kcal:400,dish:"鮭魚壽司1個＋毛豆＋秋刀魚壽司＋鮭魚刺身＋鯛魚刺身＋旗魚刺身",c:24,p:32,f:17},
+{store:"壽司",kcal:500,dish:"鯖魚壽司＋鯡魚壽司＋甜蝦軍艦＋鮪魚手捲＋鮭魚刺身＋花椰菜",c:52,p:28,f:19},
+{store:"壽司",kcal:500,dish:"鮭魚壽司＋鮪魚壽司＋旗魚刺身＋茶碗蒸＋鮭魚卵軍艦＋味噌湯",c:55,p:32,f:16},
+{store:"壽司",kcal:500,dish:"秋刀魚壽司＋毛豆＋鮭魚肚壽司＋味噌湯＋鮪魚沙拉軍艦＋海帶絲",c:55,p:21,f:21},
+
+{store:"滷味",kcal:300,dish:"蓮藕片＋梅花肉片＋空心菜＋板豆腐",c:18,p:24,f:15},
+{store:"滷味",kcal:300,dish:"地瓜＋隔間肉＋地瓜葉＋黑豆乾",c:22,p:22,f:17},
+{store:"滷味",kcal:300,dish:"馬鈴薯＋豬腱子肉＋大陸妹＋黃豆乾",c:17,p:29,f:15},
+{store:"滷味",kcal:400,dish:"馬鈴薯＋玉米＋小白菜＋香菇＋牛肉片＋生豆包",c:32,p:29,f:18},
+{store:"滷味",kcal:400,dish:"蓮藕片＋芋頭＋青江菜＋金針菇＋里肌肉片＋凍豆腐",c:33,p:30,f:15},
+{store:"滷味",kcal:400,dish:"南瓜＋玉米＋四季豆＋木耳＋雞胗＋嫩豆腐",c:30,p:28,f:20},
+{store:"滷味",kcal:500,dish:"蒸煮麵＋高麗菜＋玉米筍＋雞肉片＋雞蛋＋小方豆乾",c:39,p:41,f:24},
+{store:"滷味",kcal:500,dish:"烏龍麵＋青江菜＋絲瓜＋雞胗＋牛肉片＋生豆包",c:36,p:39,f:26},
+{store:"滷味",kcal:500,dish:"芋頭＋南瓜＋菜頭＋滷蛋＋里肌肉片＋雞蛋豆腐",c:30,p:38,f:23},
+
+{store:"漢堡王",kcal:300,dish:"花生蔬菜蛋華頌＋冰美式研磨",c:33,p:9,f:10},
+{store:"漢堡王",kcal:300,dish:"Q彈海老堡＋立頓冰綠茶(中)",c:45,p:11,f:11},
+{store:"漢堡王",kcal:300,dish:"BK火烤牛肉沙拉＋蕈菇湯",c:27,p:14,f:15},
+{store:"漢堡王",kcal:400,dish:"辣味小華堡＋熱美式研磨",c:34,p:18,f:19},
+{store:"漢堡王",kcal:400,dish:"雙起司牛肉堡＋低卡百事可樂(中)",c:30,p:22,f:21},
+{store:"漢堡王",kcal:400,dish:"火烤雞腿培根堡＋非研磨熱美式",c:39,p:23,f:26},
+{store:"漢堡王",kcal:500,dish:"總匯吉士烤雞腿堡＋熱風味茶",c:38,p:23,f:38},
+{store:"漢堡王",kcal:500,dish:"脆洋蔥牛肉堡＋蕈菇湯",c:48,p:21,f:24},
+{store:"漢堡王",kcal:500,dish:"總匯辣雞腿堡＋立頓冰綠茶(中)",c:48,p:16,f:27},
+
+{store:"鬍鬚張",kcal:300,dish:"雞肉飯半碗(無醬汁)＋白菜滷＋菜頭湯",c:42,p:13,f:11},
+{store:"鬍鬚張",kcal:300,dish:"白飯(半碗)＋爌香腱子＋水耕A菜",c:47,p:15,f:9},
+{store:"鬍鬚張",kcal:300,dish:"雞肉飯半碗(無醬汁)＋鴨蛋＋時令蔬菜",c:35,p:23,f:13},
+{store:"鬍鬚張",kcal:400,dish:"時令蔬菜＋剝皮辣椒雞湯",c:27,p:23,f:21},
+{store:"鬍鬚張",kcal:400,dish:"滷肉飯(半碗)＋苦瓜排骨湯",c:25,p:19,f:30},
+{store:"鬍鬚張",kcal:400,dish:"雞滷飯(半碗)＋蕈菇龍髓湯",c:30,p:24,f:30},
+{store:"鬍鬚張",kcal:500,dish:"雞肉飯＋蒜味腱子＋菜頭湯",c:50,p:24,f:20},
+{store:"鬍鬚張",kcal:500,dish:"雞肉飯便當",c:56,p:25,f:27},
+{store:"鬍鬚張",kcal:500,dish:"爌香腱子便當",c:55,p:30,f:28},
+
+{store:"摩斯漢堡早餐",kcal:300,dish:"蕃茄吉士蛋堡＋冰紅茶(無糖)",c:30,p:15,f:12},
+{store:"摩斯漢堡早餐",kcal:300,dish:"火腿歐姆蛋堡＋鹿兒島焙茶",c:29,p:15,f:12},
+{store:"摩斯漢堡早餐",kcal:300,dish:"日式豬排三明治＋早餐熱咖啡",c:44,p:13,f:10},
+{store:"摩斯漢堡早餐",kcal:400,dish:"咖哩豬排堡-Keema醬＋澳式冰歐雷(M)",c:49,p:24,f:12},
+{store:"摩斯漢堡早餐",kcal:400,dish:"雞肉三明治＋鮮菇濃湯",c:52,p:19,f:18},
+{store:"摩斯漢堡早餐",kcal:400,dish:"黃金蝦三明治＋鮮奶",c:52,p:19,f:21},
+{store:"摩斯漢堡早餐",kcal:500,dish:"培根雞蛋堡＋摩斯冰咖啡",c:56,p:18,f:24},
+{store:"摩斯漢堡早餐",kcal:500,dish:"火腿歐姆可頌堡＋熱紅茶(無糖)",c:37,p:17,f:29},
+{store:"摩斯漢堡早餐",kcal:500,dish:"火腿蛋三明治＋玉米濃湯",c:50,p:18,f:25},
+
+{store:"SUBWAY",kcal:300,dish:"火雞胸肉潛艇堡＋蜂蜜芥末醬（6吋小麥麵包）",c:41,p:17,f:7},
+{store:"SUBWAY",kcal:300,dish:"燒烤牛肉沙拉＋雙份肉",c:12,p:27,f:7},
+{store:"SUBWAY",kcal:300,dish:"照燒雞肉沙拉＋酪梨泥(1球)",c:19,p:23,f:13},
+{store:"SUBWAY",kcal:400,dish:"鮮嫩雞柳潛艇堡＋嫩煎蛋(1片)＋甜蔥醬",c:48,p:30,f:9},
+{store:"SUBWAY",kcal:400,dish:"酪梨鮮蝦潛艇堡＋白蝦＋橄欖油",c:42,p:11,f:20},
+{store:"SUBWAY",kcal:400,dish:"墨西哥辣牛潛艇堡＋雙份肉＋黃芥末醬",c:46,p:25,f:13},
+{store:"SUBWAY",kcal:500,dish:"嫩切雞肉沙拉＋雙響起司嫩雞口袋餅",c:46,p:40,f:20},
+{store:"SUBWAY",kcal:500,dish:"厚切嫩牛潛艇堡＋嫩煎蛋＋義大利油醋",c:45,p:31,f:13},
+{store:"SUBWAY",kcal:500,dish:"照燒雞肉潛艇堡＋雙份肉＋紅酒醋",c:53,p:44,f:9},
+
+{store:"Sukiya",kcal:400,dish:"牛丼(迷你碗)飯減半＋青菜",c:38,p:16,f:19},
+{store:"Sukiya",kcal:400,dish:"泡菜牛丼(迷你碗)飯減半＋秋葵",c:44,p:21,f:18},
+{store:"Sukiya",kcal:400,dish:"牛肉定食(小)飯減半＋青菜",c:41,p:18,f:20},
+{store:"Sukiya",kcal:500,dish:"秋葵牛丼(迷你碗)飯減半＋海瓜子味噌湯＋青菜",c:49,p:28,f:22},
+{store:"Sukiya",kcal:500,dish:"蔥溫玉牛丼(迷你碗)飯減半＋味噌湯＋青菜",c:45,p:27,f:28},
+{store:"Sukiya",kcal:500,dish:"牛肉鮭魚定食(小)飯減半＋秋葵＋青菜",c:47,p:30,f:27},
+];
+
+const stores = [...new Set(DATA.map(d=>d.store))];
+
+const chipsEl = document.getElementById('chips');
+let activeStore = null;
+stores.forEach(s=>{
+  const c = document.createElement('div');
+  c.className='chip';
+  c.textContent=s;
+  c.onclick=()=>{
+    activeStore = activeStore===s ? null : s;
+    document.getElementById('search').value='';
+    render();
+    [...chipsEl.children].forEach(ch=>ch.classList.toggle('active', ch.textContent===activeStore));
+  };
+  chipsEl.appendChild(c);
+});
+
+function fmt(v){ return v===null||v===undefined ? '—' : v; }
+
+function render(){
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const main = document.getElementById('main');
+  main.innerHTML='';
+  let list = DATA;
+  if(activeStore) list = list.filter(d=>d.store===activeStore);
+  if(q) list = list.filter(d=> d.store.toLowerCase().includes(q) || d.dish.toLowerCase().includes(q));
+
+  document.getElementById('count').textContent = `共 ${list.length} 筆結果`;
+
+  if(list.length===0){
+    main.innerHTML = '<div class="empty">找不到符合的店家或餐點，試試其他關鍵字</div>';
+    return;
+  }
+
+  const byStore = {};
+  list.forEach(d=>{ (byStore[d.store] = byStore[d.store]||[]).push(d); });
+
+  Object.keys(byStore).forEach(store=>{
+    const group = document.createElement('div');
+    group.className='store-group';
+    const items = byStore[store].sort((a,b)=>a.kcal-b.kcal);
+    group.innerHTML = `<div class="store-title">${store}<span class="n">${items.length} 項</span></div>`;
+    items.forEach(d=>{
+      const card = document.createElement('div');
+      card.className='card';
+      card.innerHTML = `
+        <div class="kcal">${d.kcal} 大卡</div>
+        <div class="dish">${d.dish}</div>
+        <div class="macros">
+          <span><span class="dot c"></span>醣 ${fmt(d.c)}g</span>
+          <span><span class="dot p"></span>蛋白 ${fmt(d.p)}g</span>
+          <span><span class="dot f"></span>脂 ${fmt(d.f)}g</span>
+        </div>`;
+      group.appendChild(card);
+    });
+    main.appendChild(group);
+  });
+}
+
+document.getElementById('search').addEventListener('input', render);
+render();
+</script>
+</body>
+</html>
